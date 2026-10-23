@@ -1,98 +1,100 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# UpstageHandel — Upstage POS Management CRM
 
-# Getting Started
+Centralized, desktop-first enterprise CRM and administrative dashboard for the **Upstage POS / UpstageKadai** ecosystem.
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+Designed for authorized administrators to monitor registered users, subscription plans, merchant stores, product inventories, local and global orders, POS sales ledgers, supplier purchases, and operational alerts from one unified desktop interface.
 
-## Step 1: Start Metro
+---
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+## 1. System Architecture
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+- **Desktop CRM Target (`web/`):** React 19 + TypeScript + Vite 8 + Modern SaaS CSS System + Lucide Icons. Minimum supported viewport: **1280px**, responsive for laptops and desktop workstations.
+- **Mobile Target (`App.tsx`, `android/`, `ios/`):** React Native CLI 0.86.0 setup preserved intact for native mobile apps.
+- **Shared Data Layer (`shared/`):** Strongly-typed TypeScript contracts and schema interfaces shared between platforms.
+- **Production Backend:** Firebase Project `scaner-billing` (`scaner-billing.firebaseapp.com`).
 
-```sh
-# Using npm
+---
+
+## 2. Discovered Firebase Collections & Data Schemas
+
+| Collection / Path | Purpose | Key Document Fields |
+|---|---|---|
+| `users` | Store owners, merchants, staff | `shopName`, `ownerName`, `email`, `phone`, `role`, `customShopUid`, `subscriptionPlan`, `subscriptionActive`, `subscriptionExpiry`, `razorpayPaymentId`, `createdAt` |
+| `users/{uid}/inventory` | Local store inventory | `itemName`, `barcode`, `salesPrice`, `purchasePrice`, `quantity`, `lowStockThreshold`, `category`, `unitType` |
+| `users/{uid}/global_inventory` | Global catalog for delivery | `itemName`, `barcode`, `salesPrice`, `quantity`, `isGlobal: true` |
+| `users/{uid}/sales` | POS transactions & receipts | `billNo`, `invoiceId`, `billDate`, `items`, `total`, `profit`, `paymentMode`, `isGlobalMode`, `createdAt` |
+| `users/{uid}/invoices` | Supplier purchase invoices | `billNo`, `supplierName`, `items`, `total`, `createdAt` |
+| `users/{uid}/local_orders` | Local store customer orders | `orderId`, `customerName`, `customerPhone`, `items`, `total`, `status`, `orderType` |
+| `users/{uid}/global_orders` | Online global delivery orders | `orderId`, `customerName`, `deliveryAddress`, `items`, `total`, `status`, `isGlobalMode: true` |
+| `staffs` (Root) | Master staff accounts | `staffId`, `masterUid`, `name`, `role`, `pin`, `permissions` |
+| `location_master` | Geographic locations | Countries &rarr; States &rarr; Districts &rarr; Cities &rarr; Areas |
+
+### Real-Time vs. Historical Data Notes
+- **Real-Time State:** Active subscriptions, live inventory levels, active cart syncing, and order status transitions (`onSnapshot`).
+- **Historical Ledgers:** POS sales (`sales`), supplier procurement (`invoices`), and customer orders.
+- **Documented Limitations:** The ecosystem does not record historical login session events in a dedicated audit collection. The CRM presents current session states and available `createdAt` / `lastLogin` fields.
+
+---
+
+## 3. Quick Start & Commands
+
+### Running the Desktop Web CRM
+From the project root:
+
+```bash
+# 1. Run local dev server with Hot Module Replacement (HMR)
+npm run web
+
+# Open in desktop browser:
+# http://localhost:5173
+```
+
+### Production Build & Preview
+```bash
+# Compile TypeScript and generate optimized production bundle in web/dist
+npm run build:web
+
+# Preview production build locally
+npm run preview:web
+```
+
+### Running Native Mobile App
+```bash
+# Start React Native Metro bundler
 npm start
 
-# OR using Yarn
-yarn start
-```
-
-## Step 2: Build and run your app
-
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
-
-### Android
-
-```sh
-# Using npm
+# Run on Android
 npm run android
 
-# OR using Yarn
-yarn android
-```
-
-### iOS
-
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
-
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
-
-```sh
-bundle install
-```
-
-Then, and every time you update your native dependencies, run:
-
-```sh
-bundle exec pod install
-```
-
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
-
-```sh
-# Using npm
+# Run on iOS
 npm run ios
-
-# OR using Yarn
-yarn ios
 ```
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
+---
 
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
+## 4. Administrator Security & Authentication
 
-## Step 3: Modify your app
+- The CRM requires authenticated administrator access.
+- Authorization is verified through:
+  1. Firestore user role: `role === 'admin'`.
+  2. Firebase Custom Claims: `admin === true`.
+  3. Authorized Administrator whitelist (`VITE_ADMIN_EMAILS` or `admin@upstage.com`).
+- Unauthorized store owners or clerks trying to log into the CRM are denied access.
+- For local offline development and review, a one-click **Quick Demo Admin Access** button is available on the login screen.
 
-Now that you have successfully run the app, let's make changes!
+---
 
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
+## 5. Primary Modules in CRM
 
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
-
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
-
-## Congratulations! :tada:
-
-You've successfully run and modified your React Native App. :partying_face:
-
-### Now what?
-
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
-
-# Troubleshooting
-
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
-
-# Learn More
-
-To learn more about React Native, take a look at the following resources:
-
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
-# UpstageHandel-App
+1. **Overview Dashboard:** Executive KPIs (Users, Active/Expired Plans, Orders, Gross Sales, Profits, Low Stock Alerts) + Trend charts.
+2. **Users Directory:** Full searchable user list with role filters, contact details, profile inspector, and CSV export.
+3. **Subscription Management:** Plan tiers (`Free Trial`, `Basic`, `Premium`, `Pro`), expiry countdown, Razorpay payment verification, and manual plan assignment.
+4. **Shop Management:** Merchant storefront directory, delivery scope (`Local` vs `Global`), and **Shop 360° Inspector** with sub-tabs for that shop's catalog, sales, orders, and restocks.
+5. **Products & Inventory:** Central product catalog, stock thresholds, cost margins, and out-of-stock badges.
+6. **Orders Queue:** In-store and global delivery orders with status progression (`Preparing`, `Ready`, `Completed`, `Rejected`).
+7. **Sales History:** POS receipts, transaction numbers (`YYYYMMDD-XXXX`), payment method breakdown (`CASH`, `UPI`, `CARD`, `ONLINE`), and gross margin calculation.
+8. **Purchase History:** Supplier procurement records, vendor restocks, and unit cost records.
+9. **Reports & Analytics:** Merchant performance league table, channel split (Local vs Global), and performance CSV downloads.
+10. **Activity & Alerts:** Live incident center with severity filtering (Critical, Warning, Informational).
+11. **Settings & Diagnostics:** Firebase project credentials (`scaner-billing`), connectivity tester, and security documentation.
+# upstagehandelwebsite
